@@ -102,30 +102,31 @@ class Actions(object):
             return
         self.update_location(locn)
 
+class ItemActions(object):
+
     def pickup(self, args):
         item_name = args[0][0]
         item = self.location.remove_item(item_name)
         if not item:
             self.print_output(f"No {item_name} found in the {self.location.name}")
         else:
-            existing_item = self.get_item(item_name)
+            existing_item = self.inventory.get_item(item_name)
             if existing_item:
-                self.location.add_item(item)
                 self.print_output(f"You already have {existing_item.describe()} in your inventory")
             else:
-                self.add_item(item)
+                self.inventory.add_item(item)
                 self.print_output(f"{StringUtils.init_caps(item.describe())} was added to your inventory")
 
     def drop(self, args):
         item_name = args[0][0]
-        item = self.remove_item(item_name)
+        item = self.inventory.remove_item(item_name)
         if not item:
             # is item in your hands instead?
             item = self.hands.remove_item(item_name)
             if item:
                 self.print_output(f"You dropped the {item}")
-                self.holding()
                 self.location.add_item(item)
+                self.holding()
             else:
                 self.print_output(f"No {item_name} found in your inventory")
                 self.inventory()
@@ -134,7 +135,7 @@ class Actions(object):
             self.location.add_item(item)
             self.inventory()
 
-    def hold(self, args):
+    def hold(self, args): # grab
         num_items = len(self.hands.get_items())
         if num_items >= 2:
             self.print_output(f"You cannot hold more than two items")
@@ -142,7 +143,7 @@ class Actions(object):
 
         item_name = args[0][0]
         # try inventory
-        item = self.remove_item(item_name)
+        item = self.inventory.remove_item(item_name)
         if not item:
             # try location
             item = self.location.remove_item(item_name)
@@ -152,4 +153,3 @@ class Actions(object):
 
         self.hands.add_item(item)
         self.holding()
-

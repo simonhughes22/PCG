@@ -28,7 +28,6 @@ class LivingThing(object):
         else:
             return f"a {self}"
 
-
 @dataclass(frozen=True)
 class Item(object):
     name: str = ""
@@ -49,8 +48,10 @@ class Item(object):
             desc += f" [def+{self.defense}]"
         return desc
 
-
 class ItemHandler(object):
+    # NOTE: requires implementation of items list - self.items = []
+    def __init__(self):
+        self.items = []
 
     def get_items(self):
         return self.items
@@ -141,7 +142,6 @@ class Location(ItemHandler):
         self.name = self.name.strip()
         self.items = []
         self.creatures = ItemHandler()
-        self.creatures.items = []
 
     def get_locations(self):
         locations: List[Any] = []

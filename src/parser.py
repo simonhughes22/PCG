@@ -119,8 +119,17 @@ class Parser(Singleton):
 
     def process_rules(self, tokens: List[Token]) -> List[Token]:
         rule_matched = True
+        def hash_tokens(toks):
+            return  ",".join([t.token for t in toks])
+
+        tok_hash = hash_tokens(tokens)
         while rule_matched:
             tokens, rule_matched = self.process_rules_inner(tokens)
+            new_tok_hash = hash_tokens(tokens)
+            # Prevent loops - has the set of tokens changed?
+            if new_tok_hash == tok_hash:
+                break
+            tok_hash = new_tok_hash
         return tokens
 
     def process_rules_inner(self, tokens: List[Token]):
