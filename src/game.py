@@ -161,7 +161,7 @@ class GameState(Singleton, ItemHandler):
             if not item:
                 self.print_output(f"No {item_name} found.")
                 return
-            
+
         self.hands.add_item(item)
         self.holding()
         
