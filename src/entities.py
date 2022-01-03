@@ -56,6 +56,13 @@ class ItemHandler(object):
     def get_items(self):
         return self.items
 
+    def get_item(self, item_name: str):
+        match = [i for i in self.get_items() if i.name == item_name]
+        if match:
+            return match[0]
+        else:
+            return None
+
     def add_item(self, item: Item):
         self.items.append(item)
 
@@ -67,12 +74,8 @@ class ItemHandler(object):
         else:
             return None
 
-    def get_item(self, item_name: str):
-        match = [i for i in self.get_items() if i.name == item_name]
-        if match:
-            return match[0]
-        else:
-            return None
+    def clear(self):
+        self.items = []
 
 @dataclass
 class Player(LivingThing):

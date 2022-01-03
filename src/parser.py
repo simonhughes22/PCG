@@ -35,11 +35,13 @@ quit,exit                               =>[end_game]
 describe                                =>[describe]
 describe room|place                     =>[describe]
 where am i|i?                           =>[describe]
+info                                    =>[info]
+
 help,h,?                                =>[help]
-inventory                               =>[inventory]
+inventory                               =>[list_inventory]
 holding|holding?                        =>[holding]
 what am i holding|holding?              =>[holding]
-info                                    =>[info]
+drop all                                =>[drop_all]
 
 """.strip().split("\n")
 
