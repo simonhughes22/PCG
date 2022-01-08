@@ -83,6 +83,9 @@ class Player(LivingThing):
     attack: int = 25
     defense: int = 5
 
+class Entrance(object):
+    pass
+
 @dataclass
 class Location(ItemHandler):
     items = None

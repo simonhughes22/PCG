@@ -15,12 +15,12 @@ headbutt,headbut,kick                   =><FightVerb>
 
 # collapse different vocab
 pick up,pickup,take,equip               =>get
-hold,grab                               =>hold
+hold,grab,equip,wield                   =>hold
 kill                                    =>attack
 
 # actions
-move|go <CompassDir>                    =>[move] <CompassDir>
-move|go <VerticalUp>                    =>[move] above
+move|go|head <CompassDir>               =>[move] <CompassDir>
+move|go|head <VerticalUp>               =>[move] above
 <VerticalUp>                            =>[move] above
 move|go <VerticalDown>                  =>[move] below
 <VerticalDown>                          =>[move] below
