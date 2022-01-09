@@ -1,7 +1,7 @@
 # # Utils
-from entities import Item, Location, LivingThing
-from parser import Parser
 from game_state import GameState
+from game_world import generate_world
+from parser import Parser
 from utils import Singleton
 
 input_list = []
@@ -43,58 +43,6 @@ class Game(Singleton):
             fn(parse_results.args)
         else:
             self.gs.bad_input()
-
-# class Player(LivingThing):
-#     hp: int         = 100
-#     attack: int     = 25
-#     defense: int    = 5
-
-def generate_world():
-
-    Dragon = LivingThing(name="dragon", hp=20, attack=35, defense=5, attack_verb="slash")
-    Troll  = LivingThing(name="troll",  hp=20, attack= 15, defense=2, attack_verb="hit")
-    Rat    = LivingThing(name="rat",    hp=5,  attack= 12, defense=1, attack_verb="bite")
-    Snake  = LivingThing(name="snake",  hp=10, attack= 12, defense=1, attack_verb="bite")
-
-    Sword  = Item(name="sword",  attack=10)
-    Shield = Item(name="shield", defense=5)
-    
-    intro = Location(
-        initial_desc="Dazed, you awaken to find yourself in a large, dank cavern.",
-        desc="You are in a large, dank cavern.",
-        name="large cavern"
-    )
-    intro.add_item(Item(name="torch"))
-    intro.add_item(Sword)
-    intro.add_item(Shield)
-    intro.add_item(Item(name="key"))
-    
-    locn_west = Location(desc="""
-You enter a small cave with a low ceiling. Inside there is a dank smell, and a low, rumbling noise coming from one corner of the room.
-Wary, you glance over a see a snout poking out from the side of a pile of rocks.
-""",
-                        name="dragon room")
-    locn_west.add_creature(Dragon)
-    
-    locn_east = Location(desc="""
-You are in a room filled with treasure. Gold coins cover the floor, rubies and precious gems fill several wooden crate scattered around the room.
-""",
-                        name="treasure room")
-    
-    locn_east.add_creature(Troll)
-    
-    locn_north =  Location(
-        initial_desc="You climb through a low, arrow passageway and enter a stumble onto a narrow ledge, surrounded by water.",
-        desc="You are on a narrow ledge surrounded by water.",
-        name="water room"
-    )
-    
-    intro.add_north(locn_north)
-    
-    intro.add_west(locn_west)
-    intro.add_east(locn_east)
-
-    return intro
 
 if __name__ == "__main__":
 

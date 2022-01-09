@@ -33,11 +33,23 @@ class Item(object):
     name: str = ""
     attack: int = 0
     defense: int = 0
+    hp: int = 0
+    mp: int = 0
+
+    def on_pickup(self):
+        pass
+
+    def on_drop(self):
+        pass
+
+    def on_consume(self):
+        pass
 
     def __repr__(self):
         return self.name
 
     def describe(self):
+
         if self.name[0] in "aeiou":
             desc = f"an {self}"
         else:
@@ -79,9 +91,15 @@ class ItemHandler(object):
 
 @dataclass
 class Player(LivingThing):
-    hp: int = 100
+    hp: int = None
+    max_hp: int = 100
     attack: int = 25
     defense: int = 5
+
+    def __post_init__(self):
+        if self.hp is None:
+            self.hp = self.max_hp
+        assert  self.hp <= self.max_hp, f"Hp:{self.hp} cannpt be greater than max_hp:{self.max_hp}"
 
 class Entrance(object):
     pass

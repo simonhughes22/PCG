@@ -93,6 +93,7 @@ class ItemActions(object):
                 self.print_output(f"You already have {existing_item.describe()} in your inventory")
             else:
                 self.inventory.add_item(item)
+                item.on_pickup()
                 self.print_output(f"{StringUtils.init_caps(item.describe())} was added to your inventory")
                 self.list_inventory()
 
@@ -124,6 +125,7 @@ class ItemActions(object):
             if item:
                 self.print_output(f"You dropped the {item}")
                 self.location.add_item(item)
+                item.on_drop()
                 self.holding()
             else:
                 self.print_output(f"No {item_name} found in your inventory")
@@ -131,7 +133,18 @@ class ItemActions(object):
         else:
             self.print_output(f"You dropped the {item}")
             self.location.add_item(item)
+            item.on_drop()
             self.list_inventory()
+
+    def consume(self, args):
+        item_name = args[0][0]
+        item = self.inventory.remove_item(item_name)
+        if not item:
+            item = self.location.remove_item(item_name)
+            if not item:
+                self.print_output(f"No {item_name} found.")
+                return
+        item.on_consume()
 
     def drop_all(self, args=None):
         items = self.inventory.get_items()

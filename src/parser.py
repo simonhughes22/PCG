@@ -8,13 +8,15 @@ RULES = """
 north,south,east,west                   =><CompassDir>
 above,up,climb up                       =><VerticalUp>
 below,down,climb down                   =><VerticalDown>
-sword,shield,torch,key,potion           =><PickUpAble>
+sword,shield,torch,key                  =><PickUpAble>
+potion                                  =><Consumable>
+
 dragon,troll,snake,rat                  =><Creature>
 attack,fight,hit,punch                  =><FightVerb>
 headbutt,headbut,kick                   =><FightVerb>
 
 # collapse different vocab
-pick up,pickup,take,equip               =>get
+pick up,pickup,take                     =>get
 hold,grab,equip,wield                   =>hold
 kill                                    =>attack
 
@@ -24,10 +26,15 @@ move|go|head <VerticalUp>               =>[move] above
 <VerticalUp>                            =>[move] above
 move|go <VerticalDown>                  =>[move] below
 <VerticalDown>                          =>[move] below
+
 <FightVerb> <Creature>                  =>[fight] <Creature> <FightVerb>
+use|drink|consume <Consumable>          =>[consume] <Consumable>
 
 get <PickUpAble>                        =>[pickup] <PickUpAble>
+get <Consumable>                        =>[pickup] <Consumable>
 drop <PickUpAble>                       =>[drop] <PickUpAble>
+drop <Consumable>                       =>[drop] <Consumable>
+
 hold <PickUpAble>                       =>[hold] <PickUpAble>
 
 # special commands
