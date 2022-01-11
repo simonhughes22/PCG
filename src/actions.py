@@ -1,4 +1,7 @@
+from typing import List
 import numpy as np
+
+from entities import Entrance
 from utils import StringUtils
 
 def rand(high, low=0):
@@ -72,13 +75,16 @@ class Actions(object):
                     self.print_output(
                         f"The {creature.name} tried to {creature.attack_verb} you, doing {damage} damage. You have {self.player.hp} health remaining.")
 
-    def move(self, args):
-        direction = args[0][0]
-        locn = getattr(self.location, direction, None)
-        if not locn:
+    def move(self, args: List[str]):
+        direction:str = args[0][0]
+        entrance: Entrance = getattr(self.location, direction, None)
+        if not entrance:
             self.print_output(f"Cannot move {direction}!")
             return
-        self.update_location(locn)
+        if entrance.is_locked:
+            self.print_output(f"Cannot move {direction}, the {entrance.name} is locked and requires a {entrance.key_name} to unlock.")
+        else:
+            self.update_location(entrance.location)
 
 class ItemActions(object):
 

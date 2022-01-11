@@ -1,5 +1,5 @@
 from actions import SpecialCommands, Actions, ItemActions
-from entities import ItemHandler, Player
+from entities import ItemHandler, Player, Location
 from utils import Singleton
 
 class GameState(Singleton, SpecialCommands, Actions, ItemActions):
@@ -14,7 +14,7 @@ class GameState(Singleton, SpecialCommands, Actions, ItemActions):
         self.inventory = ItemHandler()
         self.hands = ItemHandler()
 
-    def update_location(self, location):
+    def update_location(self, location: Location):
         self.location = location
         self.visited.append(self.location.name)
         self.describe()

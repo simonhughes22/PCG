@@ -8,8 +8,10 @@ RULES = """
 north,south,east,west                   =><CompassDir>
 above,up,climb up                       =><VerticalUp>
 below,down,climb down                   =><VerticalDown>
-sword,shield,torch,key                  =><PickUpAble>
 potion                                  =><Consumable>
+
+# Line below is inferred when anything is added to the Itemhandle.add_item method
+# sword                                 =><PickUpAble>
 
 dragon,troll,snake,rat                  =><Creature>
 attack,fight,hit,punch                  =><FightVerb>
@@ -39,7 +41,7 @@ hold <PickUpAble>                       =>[hold] <PickUpAble>
 
 # special commands
 quit,exit                               =>[end_game]
-describe                                =>[describe]
+describe|look                           =>[describe]
 describe room|place                     =>[describe]
 where am i|i?                           =>[describe]
 info                                    =>[info]
@@ -81,50 +83,64 @@ class Parser(Singleton):
         return l_toks
 
     def build_fst(self, rules):
-        all_tokens = set()
-        fst = dict()
+        self.vocab = set()
+        self.fst = dict()
         for line in rules:
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
 
             left, right = line.split("=>")
-            left = left.strip()
-            right = right.strip()
+            self.add_new_rule(left, right)
 
-            lhs_phrases = [phrase.strip().split(" ") for phrase in left.split(",")]
-            assert "," not in right, "Multiple right hand phrases not supported for now"
+    def add_new_rule(self, left, right):
+        left = left.strip().lower()
+        right = right.strip().lower()
 
-            rhs_phrases = [t.strip() for t in right.split(" ") if len(t.strip()) > 0]
-            all_tokens.update(rhs_phrases)
-            for tokens in lhs_phrases:
-                # remove empty tokens
-                raw_tokens = [t for t in tokens if len(t.strip()) > 0]
-                if not raw_tokens:
-                    continue
+        lhs_phrases = self.__split_lhs(left)
+        assert "," not in right, "Multiple right hand phrases not supported for now"
 
-                # Generate permutations of lhs rule when OR chars present
-                lst_tokens = self.generate_or_variants(raw_tokens)
-                for tokens in lst_tokens:
-                    all_tokens.update(tokens)
-                    # build dictionary for phrase
-                    dct = fst
-                    for tok in tokens[:-1]:
-                        if tok not in dct:
-                            dct[tok] = tuple([None, dict()])
-                        dct = dct[tok][1]
-                    # last token
-                    tok = tokens[-1]
+        rhs_phrases = [t.strip() for t in right.split(" ") if len(t.strip()) > 0]
+        self.vocab.update(rhs_phrases)
+
+        for tokens in lhs_phrases:
+            # remove empty tokens
+            raw_tokens = [t for t in tokens if len(t.strip()) > 0]
+            if not raw_tokens:
+                continue
+
+            # Generate permutations of lhs rule when OR chars present
+            lst_tokens = self.generate_or_variants(raw_tokens)
+            for tokens in lst_tokens:
+                self.vocab.update(tokens)
+                # build dictionary for phrase
+                dct = self.fst
+                for tok in tokens[:-1]:
                     if tok not in dct:
-                        dct[tok] = tuple([rhs_phrases, dict()])
-                    else:
-                        rhs_tpl = dct[tok]
-                        assert rhs_tpl[0] is None, (left, right, tokens, rhs_tpl)
-                        # update tuple
-                        dct[tok] = tuple([rhs_phrases, rhs_tpl[1]])
+                        dct[tok] = tuple([None, dict()])
+                    dct = dct[tok][1]
+                # last token
+                tok = tokens[-1]
+                if tok not in dct:
+                    dct[tok] = tuple([rhs_phrases, dict()])
+                else:
+                    rhs_tpl = dct[tok]
+                    assert rhs_tpl[0] is None, (left, right, tokens, rhs_tpl)
+                    # update tuple
+                    dct[tok] = tuple([rhs_phrases, rhs_tpl[1]])
 
-        self.fst = fst
-        self.vocab = all_tokens
+    def __split_lhs(self, left):
+        return [phrase.strip().split(" ") for phrase in left.split(",") if phrase]
+
+    def has_rule(self, left):
+        lhs_rules = self.__split_lhs(left)
+        for tokens in lhs_rules:
+            dct = self.fst
+            for tok in tokens:
+                if tok not in dct:
+                    return False
+                dct = dct[tok][1]
+        return True
 
     def process_rules(self, tokens: List[Token]) -> List[Token]:
         rule_matched = True

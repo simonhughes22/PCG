@@ -1,7 +1,10 @@
 from dataclasses import dataclass
-from typing import Any, List
+from typing import Any, List, Callable
 
 from enums import CompassEnum, VerticalEnum
+from parser import Parser
+from utils import StringUtils
+
 
 @dataclass
 class LivingThing(object):
@@ -36,20 +39,23 @@ class Item(object):
     hp: int = 0
     mp: int = 0
 
+    consume_fn: Callable[['Item'],None] = lambda : None
+    pickup_fn: Callable[['Item'],None]  = lambda : None
+    drop_fn: Callable[['Item'],None]    = lambda : None
+
     def on_pickup(self):
-        pass
+        self.pickup_fn(self)
 
     def on_drop(self):
-        pass
+        self.drop_fn(self)
 
     def on_consume(self):
-        pass
+        self.consume_fn(self)
 
     def __repr__(self):
         return self.name
 
     def describe(self):
-
         if self.name[0] in "aeiou":
             desc = f"an {self}"
         else:
@@ -76,6 +82,11 @@ class ItemHandler(object):
             return None
 
     def add_item(self, item: Item):
+        parser = Parser()
+        item_name = item.name.lower()
+        # Allow overriding of default behavior
+        if not parser.has_rule(item_name):
+            parser.add_new_rule(left=item_name, right="<PickupAble>")
         self.items.append(item)
 
     def remove_item(self, item_name: str):
@@ -101,53 +112,118 @@ class Player(LivingThing):
             self.hp = self.max_hp
         assert  self.hp <= self.max_hp, f"Hp:{self.hp} cannpt be greater than max_hp:{self.max_hp}"
 
+@dataclass
 class Entrance(object):
-    pass
+    location: 'Location'
+
+    is_locked: bool = None
+    is_visible: bool = None
+    name: str = None
+
+    # name of item needed to unlock
+    key_name: str = "-"
+
+    def __post_init__(self):
+        # Implement default values
+        if self.is_locked is None:
+            self.is_locked = False
+        if self.is_visible is None:
+            self.is_visible = True
+        if self.name is None:
+            self.name = "passageway"
+
+    def describe(self):
+        if self.is_locked:
+            return f"locked {self.name}"
+        return self.name
+
+    def unlock(self, item: Item):
+        """
+        Unlocks the Entrance if locked
+
+        :param item: item used to unlock the Entrance
+        :return:
+        """
+        if item.name == self.key_name:
+            self.is_lockwd = False
+            return True
+        return False
+
+    def clone(self):
+        return Entrance(
+            name=self.name,
+            location=self.location, is_locked=self.is_locked,
+            is_visible=self.is_visible, key_name=self.key_name
+        )
 
 @dataclass
 class Location(ItemHandler):
+    name: str = "(Name)"
+    initial_desc: str = ""
+    desc: str = "(Desc)"
+
     items = None
     creatures = None
 
-    initial_desc: str = ""
-    desc: str = "(Desc)"
-    # if specified, overrides the default descriptor
-    relation_desc: str = ""
-    name: str = "(Name)"
+    north: Entrance = None
+    south: Entrance = None
+    east: Entrance = None
+    west: Entrance = None
 
-    north: Any = None
-    south: Any = None
-    east: Any = None
-    west: Any = None
-
-    above: Any = None
-    below: Any = None
+    above: Entrance = None
+    below: Entrance = None
 
     visited: bool = False
 
-    def add_north(self, locn):
-        self.north = locn
-        locn.south = self
+    @staticmethod
+    def Default():
+        return Location()
 
-    def add_south(self, locn):
-        self.south = locn
-        locn.north = self
+    def add_north(self, entrance: Entrance, two_way=True):
+        self.north = entrance
+        if two_way:
+            cloney = entrance.clone()
+            cloney.location = self
+            entrance.location.south = cloney
 
-    def add_east(self, locn):
-        self.east = locn
-        locn.west = self
+    def add_south(self, entrance: Entrance, two_way=True):
+        self.south = entrance
+        if two_way:
+            cloney = entrance.clone()
+            cloney.location = self
+            entrance.location.north = cloney
 
-    def add_west(self, locn):
-        self.west = locn
-        locn.east = self
+    def add_east(self, entrance: Entrance, two_way=True):
+        self.east = entrance
 
-    def add_above(self, locn):
-        self.above = locn
-        locn.below = self
+        if two_way:
+            cloney = entrance.clone()
+            cloney.location = self
+            entrance.location.west = cloney
 
-    def add_below(self, locn):
-        self.below = locn
-        locn.above = self
+    def add_west(self, entrance: Entrance, two_way=True):
+        self.west = entrance
+
+        if two_way:
+            cloney = entrance.clone()
+            cloney.location = self
+            entrance.location.east = cloney
+
+    def add_above(self, entrance: Entrance, two_way=True):
+        self.above = entrance
+
+        if two_way:
+            cloney = entrance.clone()
+            cloney.location = self
+            entrance.location.below = cloney
+
+    def add_below(self, entrance: Entrance, two_way=True):
+        self.below = entrance
+
+        if two_way:
+            cloney = entrance.clone()
+            cloney.location = self
+            entrance.location.above = cloney
 
     def add_creature(self, creature):
         self.creatures.add_item(creature)
@@ -167,21 +243,21 @@ class Location(ItemHandler):
         self.items = []
         self.creatures = ItemHandler()
 
-    def get_locations(self):
-        locations: List[Any] = []
+    def get_entrance_directions(self):
+        entrances: List[Entrance] = []
         if self.north:
-            locations.append(CompassEnum.North)
+            entrances.append(CompassEnum.North)
         if self.south:
-            locations.append(CompassEnum.South)
+            entrances.append(CompassEnum.South)
         if self.west:
-            locations.append(CompassEnum.West)
+            entrances.append(CompassEnum.West)
         if self.east:
-            locations.append(CompassEnum.East)
+            entrances.append(CompassEnum.East)
         if self.above:
-            locations.append(VerticalEnum.Above)
+            entrances.append(VerticalEnum.Above)
         if self.below:
-            locations.append(VerticalEnum.Below)
-        return locations
+            entrances.append(VerticalEnum.Below)
+        return entrances
 
     def describe(self):
         def describe_item_list(items):
@@ -193,23 +269,23 @@ class Location(ItemHandler):
             return str_items
 
         # Description
+        out_val = StringUtils.init_caps(self.name)
         if not self.visited:
             self.visited = True
-            out_val = self.initial_desc
+            out_val += f"\n{self.initial_desc}"
         else:
-            out_val = self.desc
+            out_val += f"\n{self.desc}"
 
-        # Locations - paths into an out of location
-        for name in self.get_locations():
-            locn = getattr(self, name)
-            if locn.relation_desc:
-                out_val += f"\n{locn.relation_desc}. "
-            elif name in VerticalEnum.Values:
-                out_val += f"\n{StringUtils.init_caps(name)} is a {locn.name}. "
-            elif name in CompassEnum.Values:
-                out_val += f"\nTo the {name} is a {locn.name}. "
+        # Entrances - paths into an out of location
+        for direction in self.get_entrance_directions():
+            # Use direction name to get correct property
+            entrance: Entrance = getattr(self, direction)
+            if direction in VerticalEnum.Values:
+                out_val += f"\n{StringUtils.init_caps(direction)} is a {entrance.describe()}. "
+            elif direction in CompassEnum.Values:
+                out_val += f"\nTo the {direction} is a {entrance.describe()}. "
             else:
-                raise Exception(f"Unknown location name: {name}")
+                raise Exception(f"Unknown location name: {direction}")
 
         creatures = self.creatures.get_items()
         if creatures:
@@ -220,3 +296,4 @@ class Location(ItemHandler):
             items = self.get_items()
             out_val += f"\nIn the {self.name} you find {describe_item_list(items)}."
         return out_val.strip()
+

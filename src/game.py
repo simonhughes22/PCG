@@ -36,6 +36,7 @@ class Game(Singleton):
 
     def loop(self):
         user_input = self.get_user_input("\nWhat do you want to do?\n")
+        self.gs.print_output(f">>> {user_input}")
 
         parse_results = self.parser.parse(user_input)
         if parse_results.is_valid:
