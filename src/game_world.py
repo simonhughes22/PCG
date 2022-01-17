@@ -6,7 +6,6 @@
 from entities import LivingThing, Item, Location, Entrance
 from game_state import GameState
 
-
 def generate_world():
     dragon = LivingThing(name="dragon", hp=20, attack=35, defense=5, attack_verb="slash")
     troll = LivingThing(name="troll", hp=20, attack=15, defense=2, attack_verb="hit")

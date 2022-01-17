@@ -2,7 +2,7 @@ from actions import SpecialCommands, Actions, ItemActions
 from entities import ItemHandler, Player, Location
 from utils import Singleton
 
-class GameState(Singleton, SpecialCommands, Actions, ItemActions):
+class GameState(SpecialCommands, Actions, ItemActions, metaclass=Singleton):
 
     def __init__(self):
         self.player = Player()

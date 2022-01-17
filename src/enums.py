@@ -18,13 +18,13 @@ def add_meta_data(cls):
     cls.Members = get_members(cls)
     cls.Values = get_values(cls)
 
-class CompassEnum(Singleton):
+class CompassEnum(object, metaclass=Singleton):
     North = "north"
     South = "south"
     East = "east"
     West = "west"
 
-class VerticalEnum(Singleton):
+class VerticalEnum(object, metaclass=Singleton):
     Above = "above"
     Below = "below"
 

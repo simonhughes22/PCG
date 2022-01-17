@@ -14,7 +14,7 @@ def pop_from_list(s):
         return item
     return "quit"
 
-class Game(Singleton):
+class Game(object, metaclass=Singleton):
             
     def __init__(self):
         self.play = True

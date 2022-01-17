@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Callable
+from typing import List, Callable, Union
 
 from enums import CompassEnum, VerticalEnum
 from parser import Parser
@@ -39,9 +39,20 @@ class Item(object):
     hp: int = 0
     mp: int = 0
 
-    consume_fn: Callable[['Item'],None] = lambda : None
-    pickup_fn: Callable[['Item'],None]  = lambda : None
-    drop_fn: Callable[['Item'],None]    = lambda : None
+    consume_fn: Callable[['Item'],None] = lambda a: None
+    pickup_fn: Callable[['Item'],None]  = lambda a: None
+    drop_fn: Callable[['Item'],None]    = lambda a: None
+
+    def __post_init__(self):
+        parser = Parser()
+        item_name = self.name.lower()
+        # Allow overriding of default behavior
+        if " " in item_name:
+            item_name_joined = item_name.replace(" ", "_")
+            parser.try_add_new_rule(left=item_name, right=item_name_joined)
+            parser.try_add_new_rule(left=item_name_joined, right="<PickupAble>")
+        else:
+            parser.try_add_new_rule(left=item_name, right="<PickupAble>")
 
     def on_pickup(self):
         self.pickup_fn(self)
@@ -69,24 +80,22 @@ class Item(object):
 class ItemHandler(object):
     # NOTE: requires implementation of items list - self.items = []
     def __init__(self):
-        self.items = []
+        self.items : List[Item] = []
 
-    def get_items(self):
+    def get_items(self, pattern:str = None)->List[Item]:
+        if pattern:
+            return [i for i in self.items if i.name.replace(" ", "_") == pattern.replace(" ", "_")]
         return self.items
 
-    def get_item(self, item_name: str):
-        match = [i for i in self.get_items() if i.name == item_name]
+    def get_item(self, item_name: str)->Union[Item, None]:
+        match = self.get_items(pattern=item_name)
         if match:
+            assert len(match) == 1, f"Should only match one item: {item_name}"
             return match[0]
         else:
             return None
 
-    def add_item(self, item: Item):
-        parser = Parser()
-        item_name = item.name.lower()
-        # Allow overriding of default behavior
-        if not parser.has_rule(item_name):
-            parser.add_new_rule(left=item_name, right="<PickupAble>")
+    def add_item(self, item: Item)->None:
         self.items.append(item)
 
     def remove_item(self, item_name: str):
@@ -119,9 +128,11 @@ class Entrance(object):
     is_locked: bool = None
     is_visible: bool = None
     name: str = None
+    short_name: str = ""
 
     # name of item needed to unlock
     key_name: str = "-"
+    cloney: 'Entrance' = None
 
     def __post_init__(self):
         # Implement default values
@@ -131,6 +142,13 @@ class Entrance(object):
             self.is_visible = True
         if self.name is None:
             self.name = "passageway"
+        if not self.short_name:
+            # default to last token
+            self.short_name = self.name.lower().strip().split(" ")[-1]
+
+        parser = Parser()
+        parser.try_add_new_rule(left=self.name, right="<Unlockable>")
+        parser.try_add_new_rule(left=self.short_name, right="<Unlockable>")
 
     def describe(self):
         if self.is_locked:
@@ -145,16 +163,21 @@ class Entrance(object):
         :return:
         """
         if item.name == self.key_name:
-            self.is_lockwd = False
+            self.is_locked = False
+            if self.cloney:
+                self.cloney.is_locked = False
             return True
         return False
 
     def clone(self):
-        return Entrance(
+        e = Entrance(
             name=self.name,
             location=self.location, is_locked=self.is_locked,
             is_visible=self.is_visible, key_name=self.key_name
         )
+        self.cloney = e
+        e.cloney = self
+        return e
 
 @dataclass
 class Location(ItemHandler):
@@ -243,6 +266,10 @@ class Location(ItemHandler):
         self.items = []
         self.creatures = ItemHandler()
 
+    def get_entrances(self)->List[Entrance]:
+        directions = self.get_entrance_directions()
+        return [getattr(self, d) for d in directions]
+
     def get_entrance_directions(self):
         entrances: List[Entrance] = []
         if self.north:
@@ -280,6 +307,8 @@ class Location(ItemHandler):
         for direction in self.get_entrance_directions():
             # Use direction name to get correct property
             entrance: Entrance = getattr(self, direction)
+            if not entrance.is_visible:
+                continue
             if direction in VerticalEnum.Values:
                 out_val += f"\n{StringUtils.init_caps(direction)} is a {entrance.describe()}. "
             elif direction in CompassEnum.Values:

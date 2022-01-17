@@ -1,9 +1,9 @@
-class Singleton(object):
-    __instance = None
-    def __new__(cls, *args):
-        if cls.__instance is None:
-            cls.__instance = object.__new__(cls, *args)
-        return cls.__instance
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 class StringUtils(object):
 

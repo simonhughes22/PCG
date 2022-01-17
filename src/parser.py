@@ -12,6 +12,7 @@ potion                                  =><Consumable>
 
 # Line below is inferred when anything is added to the Itemhandle.add_item method
 # sword                                 =><PickUpAble>
+# door                                  =><Unlockable>
 
 dragon,troll,snake,rat                  =><Creature>
 attack,fight,hit,punch                  =><FightVerb>
@@ -21,6 +22,7 @@ headbutt,headbut,kick                   =><FightVerb>
 pick up,pickup,take                     =>get
 hold,grab,equip,wield                   =>hold
 kill                                    =>attack
+un lock                                 =>unlock
 
 # actions
 move|go|head <CompassDir>               =>[move] <CompassDir>
@@ -38,6 +40,7 @@ drop <PickUpAble>                       =>[drop] <PickUpAble>
 drop <Consumable>                       =>[drop] <Consumable>
 
 hold <PickUpAble>                       =>[hold] <PickUpAble>
+unlock|open <Unlockable>                =>[unlock] <Unlockable>
 
 # special commands
 quit,exit                               =>[end_game]
@@ -65,7 +68,7 @@ class ParseResult(object):
     method: str = ""
     args: Any = None
 
-class Parser(Singleton):
+class Parser(object, metaclass=Singleton):
     StopWords = set("a,an,the".split(","))
 
     def __init__(self):
@@ -91,9 +94,20 @@ class Parser(Singleton):
                 continue
 
             left, right = line.split("=>")
-            self.add_new_rule(left, right)
+            self.__add_new_rule(left, right)
 
-    def add_new_rule(self, left, right):
+    def try_add_new_rule(self, left, right):
+        """
+        Add a new rule if it doesn't already exist (allows overriding from standard rules)
+
+        :param left:    Left hand side
+        :param right:   Right hand side
+        :return:
+        """
+        if not self.has_rule(left):
+            self.__add_new_rule(left, right)
+
+    def __add_new_rule(self, left, right):
         left = left.strip().lower()
         right = right.strip().lower()
 

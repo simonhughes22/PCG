@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
 
-from entities import Entrance
+from entities import Entrance, Location, ItemHandler
 from utils import StringUtils
 
 def rand(high, low=0):
@@ -85,6 +85,26 @@ class Actions(object):
             self.print_output(f"Cannot move {direction}, the {entrance.name} is locked and requires a {entrance.key_name} to unlock.")
         else:
             self.update_location(entrance.location)
+
+    def unlock(self, args: List[str]):
+        entrance: str = args[0][0]
+        location: Location = self.location
+        entrances = [e for e in location.get_entrances() if e.is_visible and entrance in e.name and e.is_locked]
+        if not entrances:
+            self.print_output(f"Nothing to unlock that matches: '{entrance}'")
+            return
+        if len(entrances) > 1:
+            self.print_output(f"Too many matches for: '{entrance}'. Please be more specific about what you want to unlock.")
+            return
+
+        e_match: Entrance = entrances[0]
+        inventory: ItemHandler = self.inventory
+        matching_keys = inventory.get_items(e_match.key_name)
+        if not matching_keys:
+            self.print_output(f"You need a {e_match.key_name} to open the {e_match.describe()}")
+            return
+        if e_match.unlock(matching_keys[0]):
+            self.print_output(f"The {e_match.name} was successfully unlocked")
 
 class ItemActions(object):
 
